@@ -29,7 +29,7 @@ AC_DEFUN([UTIL_REWRITE_AS_UNIX_PATH],
   if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
     unix_path=`$CYGPATH -u "$windows_path"`
     $1="$unix_path"
-  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
+  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
     unix_path=`$ECHO "$windows_path" | $SED -e 's,^\\(.\\):,/\\1,g' -e 's,\\\\,/,g'`
     $1="$unix_path"
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
@@ -48,7 +48,7 @@ AC_DEFUN([UTIL_REWRITE_AS_WINDOWS_MIXED_PATH],
   if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
     windows_path=`$CYGPATH -m "$unix_path"`
     $1="$windows_path"
-  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
+  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
     windows_path=`cmd //c echo $unix_path`
     $1="$windows_path"
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
@@ -190,7 +190,7 @@ AC_DEFUN([UTIL_FIXUP_PATH_MSYS],
 
   UTIL_ABSOLUTE_PATH(new_path)
 
-  UTIL_MAKE_WINDOWS_SPACE_SAFE_MSYS([$new_path])
+  # UTIL_MAKE_WINDOWS_SPACE_SAFE_MSYS([$new_path])
   UTIL_REWRITE_AS_UNIX_PATH(new_path)
   if test "x$path" != "x$new_path"; then
     $1="$new_path"

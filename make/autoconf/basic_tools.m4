@@ -97,7 +97,7 @@ AC_DEFUN_ONCE([BASIC_SETUP_FUNDAMENTAL_TOOLS],
   UTIL_PATH_PROGS(NICE, nice)
 
   UTIL_PATH_PROGS(LSB_RELEASE, lsb_release)
-  UTIL_PATH_PROGS(CMD, cmd.exe, $PATH /cygdrive/c/Windows/System32 /mnt/c/Windows/System32)
+  UTIL_PATH_PROGS(CMD, cmd.exe, $PATH /cygdrive/c/Windows/System32 /mnt/c/Windows/System32 /c/windows/system32)
 ])
 
 ###############################################################################
@@ -132,7 +132,7 @@ AC_DEFUN([BASIC_CHECK_MAKE_VERSION],
         if test "x$OPENJDK_BUILD_OS" = "xwindows"; then
           if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
             MAKE_EXPECTED_ENV='cygwin'
-          elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
+          elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
             MAKE_EXPECTED_ENV='msys'
           elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
             MAKE_EXPECTED_ENV='x86_64-.*-linux-gnu'

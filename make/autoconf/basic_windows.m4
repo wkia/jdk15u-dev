@@ -69,7 +69,7 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
     if test "x$test_cygdrive_prefix" = x; then
       AC_MSG_ERROR([Your cygdrive prefix is not /cygdrive. This is currently not supported. Change with mount -c.])
     fi
-  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
+  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
     AC_MSG_CHECKING([msys release])
     MSYS_RELEASE=`$UNAME -r`
     AC_MSG_RESULT([$MSYS_RELEASE])
@@ -138,7 +138,7 @@ AC_DEFUN_ONCE([BASIC_COMPILE_FIXPATH],
     if test "x$OPENJDK_BUILD_OS_ENV" = xwindows.cygwin; then
       # Important to keep the .exe suffix on Cygwin for Hotspot makefiles
       FIXPATH="$FIXPATH_BIN -c"
-    elif test "x$OPENJDK_BUILD_OS_ENV" = xwindows.msys; then
+    elif test "x$OPENJDK_BUILD_OS_ENV" = xwindows.msys2; then
       # Take all collected prefixes and turn them into a -m/c/foo@/c/bar@... command line
       # @ was chosen as separator to minimize risk of other tools messing around with it
       all_unique_prefixes=`echo "${all_fixpath_prefixes@<:@@@:>@}" \
