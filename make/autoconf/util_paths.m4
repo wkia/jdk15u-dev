@@ -91,7 +91,7 @@ AC_DEFUN([UTIL_FIXUP_PATH],
     if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
       UTIL_FIXUP_PATH_CYGWIN($1)
     elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
-      UTIL_FIXUP_PATH_MSYS($1)
+      UTIL_FIXUP_PATH_CYGWIN($1)
     elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
       UTIL_FIXUP_PATH_WSL($1)
     else
@@ -129,7 +129,7 @@ AC_DEFUN([UTIL_FIXUP_EXECUTABLE],
     if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
       UTIL_FIXUP_EXECUTABLE_CYGWIN($1)
     elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
-      UTIL_FIXUP_EXECUTABLE_MSYS($1)
+      UTIL_FIXUP_EXECUTABLE_CYGWIN($1)
     elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
       UTIL_FIXUP_EXECUTABLE_WSL($1)
     else
