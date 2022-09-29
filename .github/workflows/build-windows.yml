@@ -99,6 +99,26 @@ jobs:
             modify --quiet --installPath 'C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise' \
             --add Microsoft.VisualStudio.Component.VC.${{ inputs.msvc-toolset-version }}.${{ inputs.msvc-toolset-architecture }}
 
+      - name: 'Check VC 1'
+        run: >
+          ls -l "/C/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise"
+        
+      - name: 'Check VC 2'
+        run: >
+          find "/C/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise" -type d -name bin
+        
+      - name: 'Check VC 3'
+        run: >
+          find "/C/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise" -type f -name cl.exe
+        
+      - name: 'Check VC 4'
+        run: >
+          find "/C/Program Files (x86)/Microsoft Visual Studio/2019" -type f -name vcvarsall.bat
+        
+      - name: 'Check VC 5'
+        run: >
+          find "/C/Program Files (x86)/Microsoft Visual Studio/2019" -type f -name vcvars64.bat
+        
       - name: 'Configure'
         run: >
           bash configure
