@@ -745,6 +745,8 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_EXTRA],
   fi
 
   if test "x$OPENJDK_TARGET_OS" != xwindows; then
+    UTIL_CHECK_TOOLS(STRIP, strip)
+    UTIL_FIXUP_EXECUTABLE(STRIP)
     if test "x$TOOLCHAIN_TYPE" = xgcc; then
       UTIL_CHECK_TOOLS(NM, nm gcc-nm)
     else
