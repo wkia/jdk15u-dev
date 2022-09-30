@@ -96,6 +96,7 @@ AC_DEFUN_ONCE([BASIC_SETUP_FUNDAMENTAL_TOOLS],
   UTIL_PATH_PROGS(CPIO, [cpio bsdcpio])
   UTIL_PATH_PROGS(NICE, nice)
 
+  UTIL_PATH_PROGS(PATHTOOL, cygpath wslpath)
   UTIL_PATH_PROGS(LSB_RELEASE, lsb_release)
   UTIL_PATH_PROGS(CMD, cmd, $PATH /cygdrive/c/Windows/System32 /mnt/c/Windows/System32)
 ])

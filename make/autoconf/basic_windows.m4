@@ -26,6 +26,49 @@
 # Setup basic configuration paths, and platform-specific stuff related to PATHs.
 AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
 [
+  AC_MSG_NOTICE([QQQ $OPENJDK_BUILD_OS_ENV])
+  AC_MSG_CHECKING([Windows environment type])
+  WINENV_VENDOR=${OPENJDK_BUILD_OS_ENV#windows.}
+  AC_MSG_RESULT([$WINENV_VENDOR])
+
+  if test "x$WINENV_VENDOR" = x; then
+    AC_MSG_ERROR([Unknown Windows environment. Neither cygwin, msys2, wsl1 nor wsl2 was detected.])
+  fi
+
+  if test "x$PATHTOOL" = x; then
+    AC_MSG_ERROR([Incorrect $WINENV_VENDOR installation. Neither cygpath nor wslpath was found])
+  fi
+
+  if test "x$CMD" = x; then
+    AC_MSG_ERROR([Incorrect Windows/$WINENV_VENDOR setup. Could not locate cmd.exe])
+  fi
+
+  AC_MSG_CHECKING([$WINENV_VENDOR drive prefix])
+  WINENV_PREFIX=`$PATHTOOL -u c:/ | $SED -e 's!/c/!!'`
+  AC_MSG_RESULT(['$WINENV_PREFIX'])
+  AC_SUBST(WINENV_PREFIX)
+
+  AC_MSG_CHECKING([$WINENV_VENDOR root directory as Windows path])
+  if test "x$OPENJDK_BUILD_OS_ENV" != "xwindows.wsl1"; then
+    WINENV_ROOT=`$PATHTOOL -w / 2> /dev/null`
+    # msys2 has a trailing backslash; strip it
+    WINENV_ROOT=${WINENV_ROOT%\\}
+  else
+    WINENV_ROOT='[[unavailable]]'
+  fi
+  AC_MSG_RESULT(['$WINENV_ROOT'])
+  AC_SUBST(WINENV_ROOT)
+
+  AC_MSG_CHECKING([$WINENV_VENDOR temp directory])
+  if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
+    AC_MSG_NOTICE([QQQ $OPENJDK_BUILD_OS_ENV])
+    WINENV_TEMP_DIR=$($PATHTOOL -u $($CMD //q //c echo %TEMP% 2> /dev/null) | $TR -d '\r\n')
+  else
+    WINENV_TEMP_DIR=$($PATHTOOL -u $($CMD /q /c echo %TEMP% 2> /dev/null) | $TR -d '\r\n')
+  fi
+  AC_MSG_RESULT([$WINENV_TEMP_DIR])
+  AC_MSG_NOTICE([QQQ $WINENV_TEMP_DIR])
+
   SRC_ROOT_LENGTH=`$THEPWDCMD -L|$WC -m`
   if test $SRC_ROOT_LENGTH -gt 100; then
     AC_MSG_ERROR([Your base path is too long. It is $SRC_ROOT_LENGTH characters long, but only 100 is supported])
@@ -33,7 +76,11 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
 
   AC_MSG_CHECKING([Windows version])
   # Additional [] needed to keep m4 from mangling shell constructs.
-  [ WINDOWS_VERSION=`$CMD /c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
+  if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
+    [ WINDOWS_VERSION=`$CMD //c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
+  else
+    [ WINDOWS_VERSION=`$CMD /c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
+  fi
   AC_MSG_RESULT([$WINDOWS_VERSION])
 
   if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
@@ -105,6 +152,28 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
     WINDOWS_ENV_VERSION="$WSL_KERNEL_RELEASE, $WSL_KERNEL_VERSION ($WSL_DISTRIBUTION)"
   else
     AC_MSG_ERROR([Unknown Windows environment. Neither cygwin, msys, nor wsl was detected.])
+  fi
+
+  # Chicken and egg: FIXPATH is needed for UTIL_FIXUP_PATH to work. So for the
+  # first run we use the auto-detect abilities of fixpath.sh.
+  FIXPATH_DIR="$TOPDIR/make/scripts"
+  FIXPATH="$BASH $FIXPATH_DIR/fixpath.sh exec"
+  FIXPATH_BASE="$BASH $FIXPATH_DIR/fixpath.sh"
+  FIXPATH_SAVED_PATH="$PATH"
+  UTIL_FIXUP_PATH(FIXPATH_DIR)
+
+  # Now we can use FIXPATH_DIR to rewrite path to fixpath.sh properly.
+  FIXPATH_ARGS="-e $PATHTOOL -p NONE -r ${WINENV_ROOT//\\/\\\\}  -t $WINENV_TEMP_DIR -c $CMD -q"
+  FIXPATH_BASE="$BASH $FIXPATH_DIR/fixpath.sh $FIXPATH_ARGS"
+  FIXPATH="$FIXPATH_BASE exec"
+
+  # AC_SUBST(FIXPATH_BASE)
+  AC_SUBST(FIXPATH)
+  AC_MSG_NOTICE([QQQ $FIXPATH])
+
+  SRC_ROOT_LENGTH=`$ECHO "$TOPDIR" | $WC -m`
+  if test $SRC_ROOT_LENGTH -gt 100; then
+    AC_MSG_ERROR([Your base path is too long. It is $SRC_ROOT_LENGTH characters long, but only 100 is supported])
   fi
 
   # Test if windows or unix (cygwin/msys) find is first in path.
