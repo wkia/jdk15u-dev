@@ -130,10 +130,15 @@ AC_DEFUN([FLAGS_SETUP_WARNINGS],
   case "${TOOLCHAIN_TYPE}" in
     microsoft)
       DISABLE_WARNING_PREFIX="-wd"
+      BUILD_CC_DISABLE_WARNING_PREFIX="-wd"
       CFLAGS_WARNINGS_ARE_ERRORS="-WX"
 
       WARNINGS_ENABLE_ALL="-W3"
       DISABLED_WARNINGS="4800"
+      if test "x$TOOLCHAIN_VERSION" = x2017; then
+        # VS2017 incorrectly triggers this warning for constexpr
+        DISABLED_WARNINGS+=" 4307"
+      fi
       ;;
 
     gcc)
@@ -425,9 +430,11 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_HELPER],
     ALWAYS_DEFINES_JVM="-D_REENTRANT"
     ALWAYS_DEFINES_JDK="-D_GNU_SOURCE -D_REENTRANT -D_LARGEFILE64_SOURCE -DSTDC"
   elif test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
-    ALWAYS_DEFINES_JDK="-DWIN32_LEAN_AND_MEAN -D_CRT_SECURE_NO_DEPRECATE \
+    # Access APIs for Windows 8 and above
+    # see https://docs.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt?view=msvc-170
+    ALWAYS_DEFINES_JDK="-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0602 -D_CRT_SECURE_NO_DEPRECATE \
         -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32 -DIAL"
-    ALWAYS_DEFINES_JVM="-DNOMINMAX -DWIN32_LEAN_AND_MEAN"
+    ALWAYS_DEFINES_JVM="-DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0602"
   fi
 
   ###############################################################################
@@ -506,6 +513,18 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_HELPER],
     LANGSTD_CFLAGS=""
   fi
   TOOLCHAIN_CFLAGS_JDK_CONLY="$LANGSTD_CFLAGS $TOOLCHAIN_CFLAGS_JDK_CONLY"
+
+  # CXXFLAGS C++ language level for all of JDK, including Hotspot.
+  if test "x$TOOLCHAIN_TYPE" = xgcc || test "x$TOOLCHAIN_TYPE" = xclang || test "x$TOOLCHAIN_TYPE" = xxlc; then
+    LANGSTD_CXXFLAGS="-std=c++14"
+  elif test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
+    LANGSTD_CXXFLAGS="-std:c++14"
+  else
+    AC_MSG_ERROR([Don't know how to enable C++14 for this toolchain])
+  fi
+  TOOLCHAIN_CFLAGS_JDK_CXXONLY="$TOOLCHAIN_CFLAGS_JDK_CXXONLY $LANGSTD_CXXFLAGS"
+  TOOLCHAIN_CFLAGS_JVM="$TOOLCHAIN_CFLAGS_JVM $LANGSTD_CXXFLAGS"
+  ADLC_LANGSTD_CXXFLAGS="$LANGSTD_CXXFLAGS"
 
   # CFLAGS WARNINGS STUFF
   # Set JVM_CFLAGS warning handling
@@ -729,6 +748,18 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_CPU_DEP],
     $1_WARNING_CFLAGS_JVM="-Wno-format-zero-length -Wtype-limits -Wuninitialized"
   fi
 
+  if test "x$TOOLCHAIN_TYPE" = xmicrosoft && test "x$ENABLE_REPRODUCIBLE_BUILD" = xtrue; then
+    # Enabling deterministic creates warnings if __DATE__ or __TIME__ are
+    # used, and since we are, silence that warning.
+    REPRODUCIBLE_CFLAGS="-experimental:deterministic -wd5048"
+    FLAGS_COMPILER_CHECK_ARGUMENTS(ARGUMENT: [${REPRODUCIBLE_CFLAGS}],
+        PREFIX: $3,
+        IF_FALSE: [
+            REPRODUCIBLE_CFLAGS=
+        ]
+    )
+  fi
+
   # Prevent the __FILE__ macro from generating absolute paths into the built
   # binaries. Depending on toolchain, different mitigations are possible.
   # * GCC and Clang of new enough versions have -fmacro-prefix-map.
@@ -747,6 +778,27 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_CPU_DEP],
               FILE_MACRO_CFLAGS=
           ]
       )
+    elif test "x$TOOLCHAIN_TYPE" = xmicrosoft &&
+        test "x$ENABLE_REPRODUCIBLE_BUILD" = xtrue; then
+      # There is a known issue with the pathmap if the mapping is made to the
+      # empty string. Add a minimal string "s" as prefix to work around this.
+      # PATHMAP_FLAGS is also added to LDFLAGS in flags-ldflags.m4.
+      PATHMAP_FLAGS="-pathmap:${WORKSPACE_ROOT}=s"
+      FILE_MACRO_CFLAGS="$PATHMAP_FLAGS"
+      FLAGS_COMPILER_CHECK_ARGUMENTS(ARGUMENT: [${FILE_MACRO_CFLAGS}],
+          PREFIX: $3,
+          IF_FALSE: [
+              PATHMAP_FLAGS=
+              FILE_MACRO_CFLAGS=
+          ]
+      )
+    fi
+
+    AC_MSG_CHECKING([how to prevent absolute paths in output])
+    if test "x$FILE_MACRO_CFLAGS" != x; then
+      AC_MSG_RESULT([using compiler options])
+    else
+      AC_MSG_RESULT([using relative paths])
     fi
   fi
   AC_SUBST(FILE_MACRO_CFLAGS)
@@ -755,12 +807,13 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_CPU_DEP],
   CFLAGS_JVM_COMMON="$ALWAYS_CFLAGS_JVM $ALWAYS_DEFINES_JVM \
       $TOOLCHAIN_CFLAGS_JVM ${$1_TOOLCHAIN_CFLAGS_JVM} \
       $OS_CFLAGS $OS_CFLAGS_JVM $CFLAGS_OS_DEF_JVM $DEBUG_CFLAGS_JVM \
-      $WARNING_CFLAGS $WARNING_CFLAGS_JVM $JVM_PICFLAG $FILE_MACRO_CFLAGS"
+      $WARNING_CFLAGS $WARNING_CFLAGS_JVM $JVM_PICFLAG $FILE_MACRO_CFLAGS \
+      $REPRODUCIBLE_CFLAGS"
 
   CFLAGS_JDK_COMMON="$ALWAYS_CFLAGS_JDK $ALWAYS_DEFINES_JDK $TOOLCHAIN_CFLAGS_JDK \
       $OS_CFLAGS $CFLAGS_OS_DEF_JDK $DEBUG_CFLAGS_JDK $DEBUG_OPTIONS_FLAGS_JDK \
       $WARNING_CFLAGS $WARNING_CFLAGS_JDK $DEBUG_SYMBOLS_CFLAGS_JDK \
-      $FILE_MACRO_CFLAGS"
+      $FILE_MACRO_CFLAGS $REPRODUCIBLE_CFLAGS"
 
   # Use ${$2EXTRA_CFLAGS} to block EXTRA_CFLAGS to be added to build flags.
   # (Currently we don't have any OPENJDK_BUILD_EXTRA_CFLAGS, but that might

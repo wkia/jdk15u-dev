@@ -143,14 +143,23 @@ AC_DEFUN([FLAGS_SETUP_LDFLAGS_HELPER],
     fi
   fi
 
+  if test "x$ENABLE_REPRODUCIBLE_BUILD" = "xtrue"; then
+    if test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
+      REPRODUCIBLE_LDFLAGS="-experimental:deterministic"
+    fi
+  fi
+
   if test "x$ALLOW_ABSOLUTE_PATHS_IN_OUTPUT" = "xfalse"; then
     if test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
       BASIC_LDFLAGS="$BASIC_LDFLAGS -pdbaltpath:%_PDB%"
+      # PATHMAP_FLAGS is setup in flags-cflags.m4.
+      FILE_MACRO_LDFLAGS="${PATHMAP_FLAGS}"
     fi
   fi
 
   # Export some intermediate variables for compatibility
   LDFLAGS_CXX_JDK="$BASIC_LDFLAGS_ONLYCXX $BASIC_LDFLAGS_ONLYCXX_JDK_ONLY $DEBUGLEVEL_LDFLAGS_JDK_ONLY"
+  AC_MSG_NOTICE([YYY LDFLAGS_CXX_JDK=$LDFLAGS_CXX_JDK])
   AC_SUBST(LDFLAGS_CXX_JDK)
   AC_SUBST(LIBJSIG_HASHSTYLE_LDFLAGS)
   AC_SUBST(LIBJSIG_NOEXECSTACK_LDFLAGS)
@@ -186,7 +195,7 @@ AC_DEFUN([FLAGS_SETUP_LDFLAGS_CPU_DEP],
 
   # JVM_VARIANT_PATH depends on if this is build or target...
   if test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
-    $1_LDFLAGS_JDK_LIBPATH="-libpath:${OUTPUTDIR}/support/modules_libs/java.base"
+    $1_LDFLAGS_JDK_LIBPATH="-libpath:\$(SUPPORT_OUTPUTDIR)/modules_libs/java.base"
   else
     $1_LDFLAGS_JDK_LIBPATH="-L\$(SUPPORT_OUTPUTDIR)/modules_libs/java.base \
         -L\$(SUPPORT_OUTPUTDIR)/modules_libs/java.base/${$1_JVM_VARIANT_PATH}"

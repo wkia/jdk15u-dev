@@ -47,10 +47,10 @@ OUTPUTDIR:=$(OLD_OUTPUTDIR)/bootcycle-build
 # No spaces in patsubst to avoid leading space in variable
 JAVAC_SERVER_DIR:=$(patsubst $(OLD_OUTPUTDIR)%,$(OUTPUTDIR)%,$(JAVAC_SERVER_DIR))
 
-JAVA_CMD:=$(BOOT_JDK)/bin/java
-JAVAC_CMD:=$(BOOT_JDK)/bin/javac
-JAR_CMD:=$(BOOT_JDK)/bin/jar
-JARSIGNER_CMD:=$(BOOT_JDK)/bin/jarsigner
+JAVA_CMD := $(FIXPATH) $(BOOT_JDK)/bin/java
+JAVAC_CMD := $(FIXPATH) $(BOOT_JDK)/bin/javac
+JAR_CMD := $(FIXPATH) $(BOOT_JDK)/bin/jar
+JARSIGNER_CMD:=$(FIXPATH) $(BOOT_JDK)/bin/jarsigner
 # The bootcycle JVM arguments may differ from the original boot jdk.
 JAVA_FLAGS_BIG := @BOOTCYCLE_JVM_ARGS_BIG@
 # Any CDS settings generated for the bootjdk are invalid in the bootcycle build.

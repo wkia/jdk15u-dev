@@ -70,27 +70,18 @@ AC_DEFUN_ONCE([BASIC_SETUP_PATHS],
   fi
 
   if test "x$OPENJDK_TARGET_OS" = "xwindows"; then
-    PATH_SEP=";"
-    EXE_SUFFIX=".exe"
-    BASIC_CHECK_PATHS_WINDOWS
-  else
-    PATH_SEP=":"
-    EXE_SUFFIX=""
+    BASIC_SETUP_PATHS_WINDOWS
   fi
-  AC_SUBST(PATH_SEP)
-  AC_SUBST(EXE_SUFFIX)
 
   # We get the top-level directory from the supporting wrappers.
+  BASIC_WINDOWS_VERIFY_DIR($TOPDIR, source)
+  UTIL_FIXUP_PATH(TOPDIR)
   AC_MSG_CHECKING([for top-level directory])
   AC_MSG_RESULT([$TOPDIR])
   AC_SUBST(TOPDIR)
-  AC_SUBST(CONFIGURE_START_DIR)
-
-  # We can only call UTIL_FIXUP_PATH after BASIC_CHECK_PATHS_WINDOWS.
-  UTIL_FIXUP_PATH(TOPDIR)
-  UTIL_FIXUP_PATH(CONFIGURE_START_DIR)
 
   if test "x$CUSTOM_ROOT" != x; then
+    BASIC_WINDOWS_VERIFY_DIR($CUSTOM_ROOT, custom root)
     UTIL_FIXUP_PATH(CUSTOM_ROOT)
     WORKSPACE_ROOT="${CUSTOM_ROOT}"
   else
@@ -98,13 +89,11 @@ AC_DEFUN_ONCE([BASIC_SETUP_PATHS],
   fi
   AC_SUBST(WORKSPACE_ROOT)
 
+  UTIL_FIXUP_PATH(CONFIGURE_START_DIR)
+  AC_SUBST(CONFIGURE_START_DIR)
+
   # Locate the directory of this script.
   AUTOCONF_DIR=$TOPDIR/make/autoconf
-
-  # Setup username (for use in adhoc version strings etc)
-  # Outer [ ] to quote m4.
-  [ USERNAME=`$ECHO "$USER" | $TR -d -c '[a-z][A-Z][0-9]'` ]
-  AC_SUBST(USERNAME)
 ])
 
 ###############################################################################
@@ -296,6 +285,7 @@ AC_DEFUN_ONCE([BASIC_SETUP_DEVKIT],
   AC_MSG_RESULT([$SYSROOT])
   AC_MSG_CHECKING([for toolchain path])
   AC_MSG_RESULT([$TOOLCHAIN_PATH])
+  AC_SUBST(TOOLCHAIN_PATH)
   AC_MSG_CHECKING([for extra path])
   AC_MSG_RESULT([$EXTRA_PATH])
 ])
@@ -370,6 +360,7 @@ AC_DEFUN_ONCE([BASIC_SETUP_OUTPUT_DIR],
   AC_MSG_CHECKING([what configuration name to use])
   AC_MSG_RESULT([$CONF_NAME])
 
+  BASIC_WINDOWS_VERIFY_DIR($OUTPUTDIR, output)
   UTIL_FIXUP_PATH(OUTPUTDIR)
 
   CONFIGURESUPPORT_OUTPUTDIR="$OUTPUTDIR/configure-support"

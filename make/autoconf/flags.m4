@@ -226,6 +226,14 @@ AC_DEFUN([FLAGS_SETUP_SYSROOT_FLAGS],
     fi
   fi
 
+  # For the microsoft toolchain, we need to get the SYSROOT flags from the
+  # Visual Studio environment. Currently we cannot handle this as a separate
+  # build toolchain.
+  if test "x$1" = x && test "x$OPENJDK_BUILD_OS" = "xwindows" \
+      && test "x$TOOLCHAIN_TYPE" = "xmicrosoft"; then
+    TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV
+  fi
+
   AC_SUBST($1SYSROOT_CFLAGS)
   AC_SUBST($1SYSROOT_LDFLAGS)
 ])
@@ -258,10 +266,6 @@ AC_DEFUN_ONCE([FLAGS_PRE_TOOLCHAIN],
   GLOBAL_LDFLAGS="$MACHINE_FLAG $SYSROOT_LDFLAGS $USER_LDFLAGS"
   # FIXME: Don't really know how to do with this, but this was the old behavior
   GLOBAL_CPPFLAGS="$SYSROOT_CFLAGS"
-  AC_SUBST(GLOBAL_CFLAGS)
-  AC_SUBST(GLOBAL_CXXFLAGS)
-  AC_SUBST(GLOBAL_LDFLAGS)
-  AC_SUBST(GLOBAL_CPPFLAGS)
 
   # FIXME: For compatilibity, export this as EXTRA_CFLAGS for now.
   EXTRA_CFLAGS="$MACHINE_FLAG $USER_CFLAGS"
@@ -280,6 +284,14 @@ AC_DEFUN_ONCE([FLAGS_PRE_TOOLCHAIN],
   CXXFLAGS="$GLOBAL_CXXFLAGS"
   LDFLAGS="$GLOBAL_LDFLAGS"
   CPPFLAGS="$GLOBAL_CPPFLAGS"
+
+  if test "x$TOOLCHAIN_TYPE" = xmicrosoft; then
+    # When autoconf sends both compiler and linker flags to cl.exe at the same
+    # time, linker flags must be last at the command line. Achieve this by
+    # moving them to LIBS.
+    LIBS="$LIBS -link $LDFLAGS"
+    LDFLAGS=""
+  fi
 ])
 
 AC_DEFUN([FLAGS_SETUP_TOOLCHAIN_CONTROL],
