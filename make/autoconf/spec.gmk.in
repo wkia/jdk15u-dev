@@ -135,6 +135,10 @@ ifeq ($(OPENJDK_TARGET_OS), windows)
   ifeq ($(OPENJDK_TARGET_OS_ENV), windows.wsl)
     export FIXPATH_PATH:=@VS_PATH_WINDOWS@
     export WSLENV:=$(WSLENV):FIXPATH_PATH:DEBUG_FIXPATH
+  else ifeq (@OPENJDK_BUILD_OS_ENV@, windows.msys2)
+    # Prohibit msys2 from attemping any path wrangling
+    export MSYS2_ARG_CONV_EXCL := "*"
+    export PATH:=@VS_PATH@
   else
     export PATH:=@VS_PATH@
   endif

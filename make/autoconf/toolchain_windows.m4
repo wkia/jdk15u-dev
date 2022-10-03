@@ -506,11 +506,7 @@ AC_DEFUN([TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV],
         AC_MSG_ERROR([Couldn't create extract-vs-env.bat])
       fi
       cat extract-vs-env.bat
-      if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
-        $CMD //c extract-vs-env.bat > extract-vs-env.log 2>&1
-      else
-        $CMD /c extract-vs-env.bat > extract-vs-env.log 2>&1
-      fi
+      $CMD /c extract-vs-env.bat > extract-vs-env.log 2>&1
       cd $CONFIGURE_START_DIR
 
       if test ! -s $VS_ENV_TMP_DIR/set-vs-env.sh; then

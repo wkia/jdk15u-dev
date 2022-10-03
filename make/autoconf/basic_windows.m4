@@ -31,13 +31,14 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
     AC_MSG_ERROR([Your base path is too long. It is $SRC_ROOT_LENGTH characters long, but only 100 is supported])
   fi
 
+  if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
+    # Must be done prior to calling any commands to avoid mangling of command line
+    export MSYS2_ARG_CONV_EXCL="*"
+  fi
+
   AC_MSG_CHECKING([Windows version])
   # Additional [] needed to keep m4 from mangling shell constructs.
-  if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
-    [ WINDOWS_VERSION=`$CMD //c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
-  else
-    [ WINDOWS_VERSION=`$CMD /c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
-  fi
+  [ WINDOWS_VERSION=`$CMD /c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
   AC_MSG_RESULT([$WINDOWS_VERSION])
 
   if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
@@ -87,7 +88,7 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
 
     AC_MSG_CHECKING([msys root directory as unix-style path])
     # The cmd output ends with Windows line endings (CR/LF), the grep command will strip that away
-    MSYS_ROOT_PATH=`cd / ; cmd //c cd | $GREP ".*"`
+    MSYS_ROOT_PATH=`cd / ; cmd /c cd | $GREP ".*"`
     UTIL_REWRITE_AS_UNIX_PATH(MSYS_ROOT_PATH)
     AC_MSG_RESULT([$MSYS_ROOT_PATH])
     WINDOWS_ENV_ROOT_PATH="$MSYS_ROOT_PATH"
