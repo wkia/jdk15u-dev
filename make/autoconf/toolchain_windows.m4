@@ -502,6 +502,10 @@ AC_DEFUN([TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV],
       # Now execute the newly created bat file.
       # Change directory so we don't need to mess with Windows paths in redirects.
       cd $VS_ENV_TMP_DIR
+      if test ! -s extract-vs-env.bat; then
+        AC_MSG_ERROR([Couldn't create extract-vs-env.bat])
+      fi
+      cat extract-vs-env.bat
       if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
         $CMD //c extract-vs-env.bat > extract-vs-env.log 2>&1
       else
@@ -515,6 +519,7 @@ AC_DEFUN([TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV],
         AC_MSG_NOTICE([or run "bash.exe -l" from a VS command prompt and then run configure from there.])
         AC_MSG_ERROR([Cannot continue])
       fi
+      cat $VS_ENV_TMP_DIR/set-vs-env.sh
 
       # Remove windows line endings
       $SED -i -e 's|\r||g' $VS_ENV_TMP_DIR/set-vs-env.sh
