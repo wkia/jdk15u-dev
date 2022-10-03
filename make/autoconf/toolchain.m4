@@ -659,6 +659,8 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_CORE],
   # Setup the compilers (CC and CXX)
   #
   TOOLCHAIN_FIND_COMPILER([CC], [C], $TOOLCHAIN_CC_BINARY)
+  echo "int main() { return 0; }" >ttt.c
+  $CC ttt.c 2>&1
   # Now that we have resolved CC ourself, let autoconf have its go at it
   AC_PROG_CC([$CC])
 
