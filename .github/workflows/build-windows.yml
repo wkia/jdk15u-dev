@@ -102,7 +102,7 @@ jobs:
 
       - name: 'Configure'
         run: >
-          bash configure
+          bash (configure
           --with-conf-name=${{ inputs.platform }}
           ${{ matrix.flags }}
           --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
@@ -111,7 +111,7 @@ jobs:
           --with-gtest=${{ steps.gtest.outputs.path }}
           --enable-jtreg-failure-handler
           --with-msvc-toolset-version=${{ inputs.msvc-toolset-version }}
-          ${{ inputs.extra-conf-options }}
+          ${{ inputs.extra-conf-options }} || cat config.log)
         env:
           # We need a minimal PATH on Windows
           # Set PATH to "", so just GITHUB_PATH is included
