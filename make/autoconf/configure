@@ -21,7 +21,7 @@
 # or visit www.oracle.com if you need additional information or have any
 # questions.
 #
-
+set -x
 if test "x$1" != xCHECKME; then
   echo "ERROR: Calling this wrapper script directly is not supported."
   echo "Use the 'configure' script in the top-level directory instead."
