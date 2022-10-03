@@ -33,7 +33,11 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
 
   AC_MSG_CHECKING([Windows version])
   # Additional [] needed to keep m4 from mangling shell constructs.
-  [ WINDOWS_VERSION=`$CMD /c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
+  if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
+    [ WINDOWS_VERSION=`$CMD //c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
+  else
+    [ WINDOWS_VERSION=`$CMD /c ver.exe | $EGREP -o '([0-9]+\.)+[0-9]+'` ]
+  fi
   AC_MSG_RESULT([$WINDOWS_VERSION])
 
   if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
@@ -69,7 +73,7 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
     if test "x$test_cygdrive_prefix" = x; then
       AC_MSG_ERROR([Your cygdrive prefix is not /cygdrive. This is currently not supported. Change with mount -c.])
     fi
-  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
+  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
     AC_MSG_CHECKING([msys release])
     MSYS_RELEASE=`$UNAME -r`
     AC_MSG_RESULT([$MSYS_RELEASE])
@@ -78,12 +82,12 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
     MSYS_VERSION=`$UNAME -v`
     AC_MSG_RESULT([$MSYS_VERSION])
 
-    WINDOWS_ENV_VENDOR='msys'
+    WINDOWS_ENV_VENDOR='msys2'
     WINDOWS_ENV_VERSION="$MSYS_RELEASE, $MSYS_VERSION"
 
     AC_MSG_CHECKING([msys root directory as unix-style path])
     # The cmd output ends with Windows line endings (CR/LF), the grep command will strip that away
-    MSYS_ROOT_PATH=`cd / ; cmd /c cd | $GREP ".*"`
+    MSYS_ROOT_PATH=`cd / ; cmd //c cd | $GREP ".*"`
     UTIL_REWRITE_AS_UNIX_PATH(MSYS_ROOT_PATH)
     AC_MSG_RESULT([$MSYS_ROOT_PATH])
     WINDOWS_ENV_ROOT_PATH="$MSYS_ROOT_PATH"
@@ -131,23 +135,34 @@ AC_DEFUN_ONCE([BASIC_COMPILE_FIXPATH],
   # called fixpath.
   FIXPATH=
   if test "x$OPENJDK_BUILD_OS" = xwindows; then
-    AC_MSG_CHECKING([if fixpath can be created])
     FIXPATH_SRC="$TOPDIR/make/src/native/fixpath.c"
     FIXPATH_BIN="$CONFIGURESUPPORT_OUTPUTDIR/bin/fixpath.exe"
     FIXPATH_DIR="$CONFIGURESUPPORT_OUTPUTDIR/fixpath"
     if test "x$OPENJDK_BUILD_OS_ENV" = xwindows.cygwin; then
       # Important to keep the .exe suffix on Cygwin for Hotspot makefiles
       FIXPATH="$FIXPATH_BIN -c"
-    elif test "x$OPENJDK_BUILD_OS_ENV" = xwindows.msys; then
-      # Take all collected prefixes and turn them into a -m/c/foo@/c/bar@... command line
-      # @ was chosen as separator to minimize risk of other tools messing around with it
-      all_unique_prefixes=`echo "${all_fixpath_prefixes@<:@@@:>@}" \
-          | tr ' ' '\n' | $GREP '^/./' | $SORT | $UNIQ`
-      fixpath_argument_list=`echo $all_unique_prefixes  | tr ' ' '@'`
+    elif test "x$OPENJDK_BUILD_OS_ENV" = xwindows.msys2; then
+      # In case of passing "-m/c/" to fixpath, MSYS converts it to "-mC:/",
+      # so there is a need to have some fake prefix first to prevent MSYS converting.
+      fixpath_argument_list=fake_prexix 
+      # FIXME: By default MSYS has cygdrive-prefix set to '/'. 
+      # The loop below collects all the mount drives, 
+      # and requires the cygdrive-prefix is '/'.
+      # The cygdrive-prefix can be checked by running 'mount -p' command.
+      # Perhaps the cygdrive-prefix can be changed to '/cygdrive' for the build. In this case
+      # the processing would use 'cygwin' branch for fixpath setup.
+      for DRIVE_CHAR in a b c d e f g h i j k l m n o p q r s t u v w x y z; do 
+        new_path="/${DRIVE_CHAR}/"
+        if test -d "${new_path}"; then 
+          fixpath_argument_list="${fixpath_argument_list}@${new_path}"
+        fi; 
+      done
+      AC_MSG_NOTICE([Using prefixes for fixpath on MSYS: $fixpath_argument_list])
       FIXPATH="$FIXPATH_BIN -m$fixpath_argument_list"
     elif test "x$OPENJDK_BUILD_OS_ENV" = xwindows.wsl; then
       FIXPATH="$FIXPATH_BIN -w"
     fi
+    AC_MSG_CHECKING([if fixpath can be created])
     FIXPATH_SRC_W="$FIXPATH_SRC"
     FIXPATH_BIN_W="$FIXPATH_BIN"
     UTIL_REWRITE_AS_WINDOWS_MIXED_PATH([FIXPATH_SRC_W])
@@ -155,7 +170,7 @@ AC_DEFUN_ONCE([BASIC_COMPILE_FIXPATH],
     $RM -rf $FIXPATH_BIN $FIXPATH_DIR
     $MKDIR -p $FIXPATH_DIR $CONFIGURESUPPORT_OUTPUTDIR/bin
     cd $FIXPATH_DIR
-    $CC $FIXPATH_SRC_W -Fe$FIXPATH_BIN_W > $FIXPATH_DIR/fixpath1.log 2>&1
+    $CC $FIXPATH_SRC_W -Fe: $FIXPATH_BIN_W > $FIXPATH_DIR/fixpath1.log 2>&1
     cd $CONFIGURE_START_DIR
 
     if test ! -x $FIXPATH_BIN; then
@@ -177,7 +192,7 @@ AC_DEFUN_ONCE([BASIC_COMPILE_FIXPATH],
 
     AC_MSG_CHECKING([if fixpath.exe works])
     cd $FIXPATH_DIR
-    $FIXPATH $CC $FIXPATH_SRC -Fe$FIXPATH_DIR/fixpath2.exe \
+    $FIXPATH $CC $FIXPATH_SRC -Fe: $FIXPATH_DIR/fixpath2.exe \
         > $FIXPATH_DIR/fixpath2.log 2>&1
     cd $CONFIGURE_START_DIR
     if test ! -x $FIXPATH_DIR/fixpath2.exe; then

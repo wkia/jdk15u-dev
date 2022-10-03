@@ -38,7 +38,7 @@ AC_DEFUN([HELP_MSG_MISSING_DEPENDENCY],
     HELP_MSG="OpenJDK distributions are available at http://jdk.java.net/."
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
     cygwin_help $MISSING_DEPENDENCY
-  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
+  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
     msys_help $MISSING_DEPENDENCY
   else
     PKGHANDLER_COMMAND=

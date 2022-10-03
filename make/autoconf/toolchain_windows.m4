@@ -502,7 +502,11 @@ AC_DEFUN([TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV],
       # Now execute the newly created bat file.
       # Change directory so we don't need to mess with Windows paths in redirects.
       cd $VS_ENV_TMP_DIR
-      $CMD /c extract-vs-env.bat > extract-vs-env.log 2>&1
+      if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
+        $CMD //c extract-vs-env.bat > extract-vs-env.log 2>&1
+      else
+        $CMD /c extract-vs-env.bat > extract-vs-env.log 2>&1
+      fi
       cd $CONFIGURE_START_DIR
 
       if test ! -s $VS_ENV_TMP_DIR/set-vs-env.sh; then
@@ -647,7 +651,7 @@ AC_DEFUN([TOOLCHAIN_CHECK_POSSIBLE_MSVC_DLL],
     # Need to check if the found msvcr is correct architecture
     AC_MSG_CHECKING([found $DLL_NAME architecture])
     MSVC_DLL_FILETYPE=`$FILE -b "$POSSIBLE_MSVC_DLL"`
-    if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
+    if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
       # The MSYS 'file' command returns "PE32 executable for MS Windows (DLL) (GUI) Intel 80386 32-bit"
       # on x32 and "PE32+ executable for MS Windows (DLL) (GUI) Mono/.Net assembly" on x64 systems.
       if test "x$OPENJDK_TARGET_CPU_BITS" = x32; then

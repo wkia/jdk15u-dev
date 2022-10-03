@@ -29,8 +29,8 @@ AC_DEFUN([UTIL_REWRITE_AS_UNIX_PATH],
   if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
     unix_path=`$CYGPATH -u "$windows_path"`
     $1="$unix_path"
-  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
-    unix_path=`$ECHO "$windows_path" | $SED -e 's,^\\(.\\):,/\\1,g' -e 's,\\\\,/,g'`
+  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
+    unix_path=`$CYGPATH -u "$windows_path"`
     $1="$unix_path"
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
     # wslpath does not check the input, only call if an actual windows path was
@@ -48,8 +48,8 @@ AC_DEFUN([UTIL_REWRITE_AS_WINDOWS_MIXED_PATH],
   if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.cygwin"; then
     windows_path=`$CYGPATH -m "$unix_path"`
     $1="$windows_path"
-  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
-    windows_path=`cmd //c echo $unix_path`
+  elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
+    windows_path=`$CYGPATH -m "$unix_path"`
     $1="$windows_path"
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
     windows_path=`$WSLPATH -m "$unix_path"`
@@ -90,23 +90,6 @@ AC_DEFUN([UTIL_MAKE_WINDOWS_SPACE_SAFE_CYGWIN],
       # a path prefixed by /cygdrive for fixpath to work.
       new_path="$CYGWIN_ROOT_PATH$input_path"
     fi
-  fi
-])
-
-# Helper function which possibly converts a path using DOS-style short mode.
-# If so, the updated path is stored in $new_path.
-# $1: The path to check
-AC_DEFUN([UTIL_MAKE_WINDOWS_SPACE_SAFE_MSYS],
-[
-  input_path="$1"
-  # Check if we need to convert this using DOS-style short mode. If the path
-  # contains just simple characters, use it. Otherwise (spaces, weird characters),
-  # take no chances and rewrite it.
-  # Note: m4 eats our [], so we need to use @<:@ and @:>@ instead.
-  has_forbidden_chars=`$ECHO "$input_path" | $GREP @<:@^-_/:a-zA-Z0-9@:>@`
-  if test "x$has_forbidden_chars" != x; then
-    # Now convert it to mixed DOS-style, short mode (no spaces, and / instead of \)
-    new_path=`cmd /c "for %A in (\"$input_path\") do @echo %~sA"|$TR \\\\\\\\ / | $TR 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`
   fi
 ])
 
@@ -176,29 +159,6 @@ AC_DEFUN([UTIL_FIXUP_PATH_CYGWIN],
     $1="$new_path"
     AC_MSG_NOTICE([Rewriting $1 to "$new_path"])
   fi
-])
-
-AC_DEFUN([UTIL_FIXUP_PATH_MSYS],
-[
-  path="[$]$1"
-  has_colon=`$ECHO $path | $GREP ^.:`
-  new_path="$path"
-  if test "x$has_colon" = x; then
-    # Not in mixed or Windows style, start by that.
-    new_path=`cmd //c echo $path`
-  fi
-
-  UTIL_ABSOLUTE_PATH(new_path)
-
-  UTIL_MAKE_WINDOWS_SPACE_SAFE_MSYS([$new_path])
-  UTIL_REWRITE_AS_UNIX_PATH(new_path)
-  if test "x$path" != "x$new_path"; then
-    $1="$new_path"
-    AC_MSG_NOTICE([Rewriting $1 to "$new_path"])
-  fi
-
-  # Save the first 10 bytes of this path to the storage, so fixpath can work.
-  all_fixpath_prefixes=("${all_fixpath_prefixes@<:@@@:>@}" "${new_path:0:10}")
 ])
 
 AC_DEFUN([UTIL_FIXUP_PATH_WSL],
@@ -299,73 +259,6 @@ AC_DEFUN([UTIL_FIXUP_EXECUTABLE_CYGWIN],
   UTIL_MAKE_WINDOWS_SPACE_SAFE_CYGWIN([$input_to_shortpath])
   # remove trailing .exe if any
   new_path="${new_path/%.exe/}"
-])
-
-AC_DEFUN([UTIL_FIXUP_EXECUTABLE_MSYS],
-[
-  # First separate the path from the arguments. This will split at the first
-  # space.
-  complete="[$]$1"
-  path="${complete%% *}"
-  tmp="$complete EOL"
-  arguments="${tmp#* }"
-
-  # Input might be given as Windows format, start by converting to
-  # unix format.
-  new_path="$path"
-  UTIL_REWRITE_AS_UNIX_PATH(new_path)
-
-  # Now try to locate executable using which
-  new_path=`$WHICH "$new_path" 2> /dev/null`
-
-  if test "x$new_path" = x; then
-    # Oops. Which didn't find the executable.
-    # The splitting of arguments from the executable at a space might have been incorrect,
-    # since paths with space are more likely in Windows. Give it another try with the whole
-    # argument.
-    path="$complete"
-    arguments="EOL"
-    new_path="$path"
-    UTIL_REWRITE_AS_UNIX_PATH(new_path)
-
-    new_path=`$WHICH "$new_path" 2> /dev/null`
-    # bat and cmd files are not always considered executable in MSYS causing which
-    # to not find them
-    if test "x$new_path" = x \
-        && test "x`$ECHO \"$path\" | $GREP -i -e \"\\.bat$\" -e \"\\.cmd$\"`" != x \
-        && test "x`$LS \"$path\" 2>/dev/null`" != x; then
-      new_path="$path"
-      UTIL_REWRITE_AS_UNIX_PATH(new_path)
-    fi
-
-    if test "x$new_path" = x; then
-      # It's still not found. Now this is an unrecoverable error.
-      AC_MSG_NOTICE([The path of $1, which resolves as "$complete", is not found.])
-      has_space=`$ECHO "$complete" | $GREP " "`
-      if test "x$has_space" != x; then
-        AC_MSG_NOTICE([You might be mixing spaces in the path and extra arguments, which is not allowed.])
-      fi
-      AC_MSG_ERROR([Cannot locate the the path of $1])
-    fi
-  fi
-
-  # Now new_path has a complete unix path to the binary
-  if test "x`$ECHO $new_path | $GREP ^/bin/`" != x; then
-    # Keep paths in /bin as-is, but remove trailing .exe if any
-    new_path="${new_path/%.exe/}"
-    # Do not save /bin paths to all_fixpath_prefixes!
-  else
-    # Not in mixed or Windows style, start by that.
-    new_path=`cmd //c echo $new_path`
-    UTIL_MAKE_WINDOWS_SPACE_SAFE_MSYS([$new_path])
-    # Output is in $new_path
-    UTIL_REWRITE_AS_UNIX_PATH(new_path)
-    # remove trailing .exe if any
-    new_path="${new_path/%.exe/}"
-
-    # Save the first 10 bytes of this path to the storage, so fixpath can work.
-    all_fixpath_prefixes=("${all_fixpath_prefixes@<:@@@:>@}" "${new_path:0:10}")
-  fi
 ])
 
 AC_DEFUN([UTIL_FIXUP_EXECUTABLE_WSL],
