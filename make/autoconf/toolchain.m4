@@ -746,8 +746,17 @@ AC_DEFUN_ONCE([TOOLCHAIN_DETECT_TOOLCHAIN_CORE],
   #
   # Setup the assembler (AS)
   #
-  # FIXME: is this correct for microsoft?
-  AS="$CC -c"
+  if test "x$TOOLCHAIN_TYPE" != xmicrosoft; then
+    AS="$CC -c"
+  else
+    if test "x$OPENJDK_TARGET_CPU_BITS" = "x64"; then
+      # On 64 bit windows, the assember is "ml64.exe"
+      UTIL_CHECK_TOOLS(AS, ml64)
+    else
+      # otherwise, the assember is "ml.exe"
+      UTIL_CHECK_TOOLS(AS, ml)
+    fi
+  fi
   AC_SUBST(AS)
 
   #

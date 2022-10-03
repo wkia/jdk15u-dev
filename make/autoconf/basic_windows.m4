@@ -26,7 +26,6 @@
 # Setup basic configuration paths, and platform-specific stuff related to PATHs.
 AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
 [
-  AC_MSG_NOTICE([QQQ $OPENJDK_BUILD_OS_ENV])
   AC_MSG_CHECKING([Windows environment type])
   WINENV_VENDOR=${OPENJDK_BUILD_OS_ENV#windows.}
   AC_MSG_RESULT([$WINENV_VENDOR])
@@ -61,13 +60,11 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
 
   AC_MSG_CHECKING([$WINENV_VENDOR temp directory])
   if test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys2"; then
-    AC_MSG_NOTICE([QQQ $OPENJDK_BUILD_OS_ENV])
     WINENV_TEMP_DIR=$($PATHTOOL -u $($CMD //q //c echo %TEMP% 2> /dev/null) | $TR -d '\r\n')
   else
     WINENV_TEMP_DIR=$($PATHTOOL -u $($CMD /q /c echo %TEMP% 2> /dev/null) | $TR -d '\r\n')
   fi
   AC_MSG_RESULT([$WINENV_TEMP_DIR])
-  AC_MSG_NOTICE([QQQ $WINENV_TEMP_DIR])
 
   SRC_ROOT_LENGTH=`$THEPWDCMD -L|$WC -m`
   if test $SRC_ROOT_LENGTH -gt 100; then
@@ -163,13 +160,19 @@ AC_DEFUN([BASIC_CHECK_PATHS_WINDOWS],
   UTIL_FIXUP_PATH(FIXPATH_DIR)
 
   # Now we can use FIXPATH_DIR to rewrite path to fixpath.sh properly.
-  FIXPATH_ARGS="-e $PATHTOOL -p NONE -r ${WINENV_ROOT//\\/\\\\}  -t $WINENV_TEMP_DIR -c $CMD -q"
+  if test "x$WINENV_PREFIX" = x; then
+    # On msys the prefix is empty, but we need to pass something to have the
+    # fixpath.sh options parser happy.
+    WINENV_PREFIX_ARG="NONE"
+  else
+    WINENV_PREFIX_ARG="$WINENV_PREFIX"
+  fi
+  FIXPATH_ARGS="-e $PATHTOOL -p $WINENV_PREFIX_ARG -r ${WINENV_ROOT//\\/\\\\}  -t $WINENV_TEMP_DIR -c $CMD -q"
   FIXPATH_BASE="$BASH $FIXPATH_DIR/fixpath.sh $FIXPATH_ARGS"
   FIXPATH="$FIXPATH_BASE exec"
 
   # AC_SUBST(FIXPATH_BASE)
   AC_SUBST(FIXPATH)
-  AC_MSG_NOTICE([QQQ $FIXPATH])
 
   SRC_ROOT_LENGTH=`$ECHO "$TOPDIR" | $WC -m`
   if test $SRC_ROOT_LENGTH -gt 100; then
@@ -261,4 +264,20 @@ AC_DEFUN_ONCE([BASIC_COMPILE_FIXPATH],
 
   AC_SUBST(FIXPATH)
   AC_SUBST(FIXPATH_DETACH_FLAG)
+])
+
+# Create fixpath wrapper
+AC_DEFUN([BASIC_WINDOWS_FINALIZE_FIXPATH],
+[
+  if test "x$OPENJDK_BUILD_OS" = xwindows; then
+    FIXPATH_CMDLINE=". $TOPDIR/make/scripts/fixpath.sh -e $PATHTOOL \
+        -p $WINENV_PREFIX_ARG -r ${WINENV_ROOT//\\/\\\\}  -t $WINENV_TEMP_DIR \
+        -c $CMD -q"
+    $ECHO >  $OUTPUTDIR/fixpath '#!/bin/bash'
+    $ECHO >> $OUTPUTDIR/fixpath export PATH='"[$]PATH:'$PATH'"'
+    $ECHO >> $OUTPUTDIR/fixpath $FIXPATH_CMDLINE '"[$]@"'
+    $CHMOD +x $OUTPUTDIR/fixpath
+    FIXPATH_BASE="$OUTPUTDIR/fixpath"
+    FIXPATH="$FIXPATH_BASE exec"
+  fi
 ])
