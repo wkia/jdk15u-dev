@@ -448,6 +448,12 @@ AC_DEFUN([TOOLCHAIN_SETUP_VISUAL_STUDIO_ENV],
         UTIL_REWRITE_AS_WINDOWS_MIXED_PATH([WINPATH_BASH])
       fi
 
+      echo "echo Hello" >1.bat
+      echo "call \"$WINPATH_VS_ENV_CMD\" $VS_ENV_ARGS" >>1.bat
+      echo "set" >> 1.bat
+      echo "echo Hello2" >>1.bat
+      $CMD /c 1.bat | tee 1.log
+      cat 1.log
       # Generate a DOS batch file which runs $VS_ENV_CMD, and then creates a shell
       # script (executable by bash) that will setup the important variables.
       EXTRACT_VC_ENV_BAT_FILE="$VS_ENV_TMP_DIR/extract-vs-env.bat"
