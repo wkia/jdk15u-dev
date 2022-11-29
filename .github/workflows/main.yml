@@ -227,6 +227,16 @@ jobs:
       msvc-toolset-architecture: 'x86.x64'
     if: needs.select.outputs.windows-x64 == 'true'
 
+  build-windows-x64-cygwin:
+    name: windows-x64-cygwin
+    needs: select
+    uses: ./.github/workflows/build-windows-cygwin.yml
+    with:
+      platform: windows-x64
+      msvc-toolset-version: '14.25'
+      msvc-toolset-architecture: 'x86.x64'
+    if: needs.select.outputs.windows-x64 == 'true'
+
   build-windows-aarch64:
     name: windows-aarch64
     needs: select
@@ -283,6 +293,16 @@ jobs:
       bootjdk-platform: windows-x64
       runs-on: windows-2019
 
+  test-windows-x64-cygwin:
+    name: windows-x64-cygwin
+    needs:
+      - build-windows-x64-cygwin
+    uses: ./.github/workflows/test.yml
+    with:
+      platform: windows-x64
+      bootjdk-platform: windows-x64
+      runs-on: windows-2019
+
   # Remove bundles so they are not misconstrued as binary distributions from the JDK project
   remove-bundles:
     name: 'Remove bundle artifacts'
@@ -299,11 +319,13 @@ jobs:
       - build-macos-x64
       - build-macos-aarch64
       - build-windows-x64
+      - build-windows-x64-cygwin
       - build-windows-aarch64
       - test-linux-x64
       - test-linux-x86
       - test-macos-x64
       - test-windows-x64
+      - test-windows-x64-cygwin
 
     steps:
         # Hack to get hold of the api environment variables that are only defined for actions
