@@ -1,0 +1,134 @@
+#
+# Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+#
+# This code is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License version 2 only, as
+# published by the Free Software Foundation.  Oracle designates this
+# particular file as subject to the "Classpath" exception as provided
+# by Oracle in the LICENSE file that accompanied this code.
+#
+# This code is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# version 2 for more details (a copy is included in the LICENSE file that
+# accompanied this code).
+#
+# You should have received a copy of the GNU General Public License version
+# 2 along with this work; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+# or visit www.oracle.com if you need additional information or have any
+# questions.
+#
+
+name: 'Build (windows-cygwin)'
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        required: true
+        type: string
+      extra-conf-options:
+        required: false
+        type: string
+      make-target:
+        required: false
+        type: string
+        default: 'product-bundles test-bundles'
+      debug-levels:
+        required: false
+        type: string
+        default: '[ "debug", "release" ]'
+      msvc-toolset-version:
+        required: true
+        type: string
+      msvc-toolset-architecture:
+        required: true
+        type: string
+
+env:
+  # This is needed to make the Cygwin bash work properly with multi-line yml scripts,
+  # removing \r at the end of the lines.
+  SHELLOPTS: igncr
+  CHERE_INVOKING: 1  # prevent profile script to change directory
+  # CYGWIN_NOWINPATH: 1  # only have cygwin's executables on PATH
+
+jobs:
+  build-windows:
+    name: build
+    runs-on: windows-2019
+    defaults:
+      run:
+        shell: bash --noprofile --norc -o pipefail -o igncr {0}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        debug-level: ${{ fromJSON(inputs.debug-levels) }}
+        include:
+          - debug-level: debug
+            flags: --with-debug-level=fastdebug
+            suffix: -debug
+
+    steps:
+      - run: git config --global core.autocrlf input
+
+      - name: 'Checkout the JDK source'
+        uses: actions/checkout@v3
+
+      - name: 'Get Cygwin'
+        uses: ./.github/actions/get-cygwin
+
+      - name: 'Get the BootJDK'
+        id: bootjdk
+        uses: ./.github/actions/get-bootjdk
+        with:
+          platform: windows-x64
+
+      - name: 'Get JTReg'
+        id: jtreg
+        uses: ./.github/actions/get-jtreg
+
+      - name: 'Get GTest'
+        id: gtest
+        uses: ./.github/actions/get-gtest
+
+      - name: 'Install toolchain and dependencies'
+        run: |
+          # Run Visual Studio Installer
+          '/cygdrive/c/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe' \
+            modify --quiet --installPath 'C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise' \
+            --add Microsoft.VisualStudio.Component.VC.${{ inputs.msvc-toolset-version }}.${{ inputs.msvc-toolset-architecture }}
+
+      - name: 'Configure'
+        run: >
+          bash configure
+          --with-conf-name=${{ inputs.platform }}
+          ${{ matrix.flags }}
+          --with-version-opt=${GITHUB_ACTOR}-${GITHUB_SHA}
+          --with-boot-jdk=${{ steps.bootjdk.outputs.path }}
+          --with-jtreg=${{ steps.jtreg.outputs.path }}
+          --with-gtest=${{ steps.gtest.outputs.path }}
+          --enable-jtreg-failure-handler
+          --with-msvc-toolset-version=${{ inputs.msvc-toolset-version }}
+          ${{ inputs.extra-conf-options }}
+        env:
+          CYGWIN_NOWINPATH: 1  # only have cygwin's executables on PATH
+
+      - name: 'Build'
+        id: build
+        uses: ./.github/actions/do-build
+        with:
+          make-target: '${{ inputs.make-target }}'
+          platform: ${{ inputs.platform }}
+          debug-suffix: '${{ matrix.suffix }}'
+          make-options: 'SHELL=/bin/bash'
+
+      - name: 'Upload bundles'
+        uses: ./.github/actions/upload-bundles
+        with:
+          platform: ${{ inputs.platform }}
+          debug-suffix: '${{ matrix.suffix }}'
