@@ -30,7 +30,7 @@ AC_DEFUN([UTIL_REWRITE_AS_UNIX_PATH],
     unix_path=`$CYGPATH -u "$windows_path"`
     $1="$unix_path"
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
-    unix_path=`$ECHO "$windows_path" | $SED -e 's,^\\(.\\):,/\\1,g' -e 's,\\\\,/,g'`
+    unix_path=`$CYGPATH -u "$windows_path"`
     $1="$unix_path"
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
     # wslpath does not check the input, only call if an actual windows path was
@@ -49,7 +49,7 @@ AC_DEFUN([UTIL_REWRITE_AS_WINDOWS_MIXED_PATH],
     windows_path=`$CYGPATH -m "$unix_path"`
     $1="$windows_path"
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.msys"; then
-    windows_path=`cmd //c echo $unix_path`
+    windows_path=`$CYGPATH -m "$unix_path"`
     $1="$windows_path"
   elif test "x$OPENJDK_BUILD_OS_ENV" = "xwindows.wsl"; then
     windows_path=`$WSLPATH -m "$unix_path"`
@@ -103,10 +103,19 @@ AC_DEFUN([UTIL_MAKE_WINDOWS_SPACE_SAFE_MSYS],
   # contains just simple characters, use it. Otherwise (spaces, weird characters),
   # take no chances and rewrite it.
   # Note: m4 eats our [], so we need to use @<:@ and @:>@ instead.
-  has_forbidden_chars=`$ECHO "$input_path" | $GREP @<:@^-_/:a-zA-Z0-9@:>@`
+  has_forbidden_chars=`$ECHO "$input_path" | $GREP @<:@^-._/a-zA-Z0-9@:>@`
   if test "x$has_forbidden_chars" != x; then
     # Now convert it to mixed DOS-style, short mode (no spaces, and / instead of \)
-    new_path=`cmd /c "for %A in (\"$input_path\") do @echo %~sA"|$TR \\\\\\\\ / | $TR 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`
+    shortmode_path=`$CYGPATH -s -m -a "$input_path"`
+    path_after_shortmode=`$CYGPATH -u "$shortmode_path"`
+    if test "x$path_after_shortmode" != "x$input_to_shortpath"; then
+      # Going to short mode and back again did indeed matter. Since short mode is
+      # case insensitive, let's make it lowercase to improve readability.
+      shortmode_path=`$ECHO "$shortmode_path" | $TR 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`
+      # Now convert it back to Unix-style (cygpath)
+      input_path=`$CYGPATH -u "$shortmode_path"`
+      new_path="$input_path"
+    fi
   fi
 ])
 
@@ -180,18 +189,30 @@ AC_DEFUN([UTIL_FIXUP_PATH_CYGWIN],
 
 AC_DEFUN([UTIL_FIXUP_PATH_MSYS],
 [
+  # Input might be given as Windows format, start by converting to
+  # unix format.
   path="[$]$1"
-  has_colon=`$ECHO $path | $GREP ^.:`
-  new_path="$path"
-  if test "x$has_colon" = x; then
-    # Not in mixed or Windows style, start by that.
-    new_path=`cmd //c echo $path`
-  fi
+  new_path=`$CYGPATH -u "$path"`
 
   UTIL_ABSOLUTE_PATH(new_path)
 
+  # MSYS tries to hide some aspects of the Windows file system, such that binaries are
+  # named .exe but called without that suffix. Therefore, "foo" and "foo.exe" are considered
+  # the same file, most of the time (as in "test -f"). But not when running cygpath -s, then
+  # "foo.exe" is OK but "foo" is an error.
+  #
+  # This test is therefore slightly more accurate than "test -f" to check for file precense.
+  # It is also a way to make sure we got the proper file name for the real test later on.
+  test_shortpath=`$CYGPATH -s -m "$new_path" 2> /dev/null`
+  if test "x$test_shortpath" = x; then
+    AC_MSG_NOTICE([The path of $1, which resolves as "$path", is invalid.])
+    AC_MSG_ERROR([Cannot locate the the path of $1])
+  fi
+
+  # Call helper function which possibly converts this using DOS-style short mode.
+  # If so, the updated path is stored in $new_path.
   UTIL_MAKE_WINDOWS_SPACE_SAFE_MSYS([$new_path])
-  UTIL_REWRITE_AS_UNIX_PATH(new_path)
+
   if test "x$path" != "x$new_path"; then
     $1="$new_path"
     AC_MSG_NOTICE([Rewriting $1 to "$new_path"])
@@ -312,12 +333,17 @@ AC_DEFUN([UTIL_FIXUP_EXECUTABLE_MSYS],
 
   # Input might be given as Windows format, start by converting to
   # unix format.
-  new_path="$path"
-  UTIL_REWRITE_AS_UNIX_PATH(new_path)
+  new_path=`$CYGPATH -u "$path"`
 
   # Now try to locate executable using which
   new_path=`$WHICH "$new_path" 2> /dev/null`
-
+  # bat and cmd files are not always considered executable in MSYS causing which
+  # to not find them
+  if test "x$new_path" = x \
+      && test "x`$ECHO \"$path\" | $GREP -i -e \"\\.bat$\" -e \"\\.cmd$\"`" != x \
+      && test "x`$LS \"$path\" 2>/dev/null`" != x; then
+    new_path=`$CYGPATH -u "$path"`
+  fi
   if test "x$new_path" = x; then
     # Oops. Which didn't find the executable.
     # The splitting of arguments from the executable at a space might have been incorrect,
@@ -325,19 +351,15 @@ AC_DEFUN([UTIL_FIXUP_EXECUTABLE_MSYS],
     # argument.
     path="$complete"
     arguments="EOL"
-    new_path="$path"
-    UTIL_REWRITE_AS_UNIX_PATH(new_path)
-
+    new_path=`$CYGPATH -u "$path"`
     new_path=`$WHICH "$new_path" 2> /dev/null`
     # bat and cmd files are not always considered executable in MSYS causing which
     # to not find them
     if test "x$new_path" = x \
         && test "x`$ECHO \"$path\" | $GREP -i -e \"\\.bat$\" -e \"\\.cmd$\"`" != x \
         && test "x`$LS \"$path\" 2>/dev/null`" != x; then
-      new_path="$path"
-      UTIL_REWRITE_AS_UNIX_PATH(new_path)
+      new_path=`$CYGPATH -u "$path"`
     fi
-
     if test "x$new_path" = x; then
       # It's still not found. Now this is an unrecoverable error.
       AC_MSG_NOTICE([The path of $1, which resolves as "$complete", is not found.])
@@ -349,6 +371,36 @@ AC_DEFUN([UTIL_FIXUP_EXECUTABLE_MSYS],
     fi
   fi
 
+  # MSYS tries to hide some aspects of the Windows file system, such that binaries are
+  # named .exe but called without that suffix. Therefore, "foo" and "foo.exe" are considered
+  # the same file, most of the time (as in "test -f"). But not when running cygpath -s, then
+  # "foo.exe" is OK but "foo" is an error.
+  #
+  # This test is therefore slightly more accurate than "test -f" to check for file presence.
+  # It is also a way to make sure we got the proper file name for the real test later on.
+  test_shortpath=`$CYGPATH -s -m "$new_path" 2> /dev/null`
+  if test "x$test_shortpath" = x; then
+    # Short path failed, file does not exist as specified.
+    # Try adding .exe or .cmd
+    if test -f "${new_path}.exe"; then
+      input_to_shortpath="${new_path}.exe"
+    elif test -f "${new_path}.cmd"; then
+      input_to_shortpath="${new_path}.cmd"
+    else
+      AC_MSG_NOTICE([The path of $1, which resolves as "$new_path", is invalid.])
+      AC_MSG_NOTICE([Neither "$new_path" nor "$new_path.exe/cmd" can be found])
+      AC_MSG_ERROR([Cannot locate the the path of $1])
+    fi
+  else
+    input_to_shortpath="$new_path"
+  fi
+
+  # Call helper function which possibly converts this using DOS-style short mode.
+  # If so, the updated path is stored in $new_path.
+  new_path="$input_to_shortpath"
+  # remove trailing .exe if any
+  new_path="${new_path/%.exe/}"
+
   # Now new_path has a complete unix path to the binary
   if test "x`$ECHO $new_path | $GREP ^/bin/`" != x; then
     # Keep paths in /bin as-is, but remove trailing .exe if any
@@ -356,10 +408,8 @@ AC_DEFUN([UTIL_FIXUP_EXECUTABLE_MSYS],
     # Do not save /bin paths to all_fixpath_prefixes!
   else
     # Not in mixed or Windows style, start by that.
-    new_path=`cmd //c echo $new_path`
+    new_path=`$CYGPATH -u "$new_path"`
     UTIL_MAKE_WINDOWS_SPACE_SAFE_MSYS([$new_path])
-    # Output is in $new_path
-    UTIL_REWRITE_AS_UNIX_PATH(new_path)
     # remove trailing .exe if any
     new_path="${new_path/%.exe/}"
 

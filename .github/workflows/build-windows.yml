@@ -111,10 +111,6 @@ jobs:
           --enable-jtreg-failure-handler
           --with-msvc-toolset-version=${{ inputs.msvc-toolset-version }}
           ${{ inputs.extra-conf-options }}
-        env:
-          # We need a minimal PATH on Windows
-          # Set PATH to "", so just GITHUB_PATH is included
-          PATH: ''
 
       - name: 'Build'
         id: build

@@ -54,7 +54,6 @@ env:
   # removing \r at the end of the lines.
   SHELLOPTS: igncr
   CHERE_INVOKING: 1  # prevent profile script to change directory
-  # CYGWIN_NOWINPATH: 1  # only have cygwin's executables on PATH
 
 jobs:
   build-windows:
