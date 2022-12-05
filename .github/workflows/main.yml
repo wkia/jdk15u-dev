@@ -218,7 +218,7 @@ jobs:
     if: needs.select.outputs.macos-aarch64 == 'true'
 
   build-windows-x64-msys:
-    name: windows-x64
+    name: windows-x64-msys
     needs: select
     uses: ./.github/workflows/build-windows-msys.yml
     with:
@@ -283,8 +283,8 @@ jobs:
       bootjdk-platform: macos-x64
       runs-on: macos-10.15
 
-  test-windows-x64:
-    name: windows-x64
+  test-windows-x64-msys:
+    name: windows-x64-msys
     needs:
       - build-windows-x64-msys
     uses: ./.github/workflows/test.yml
@@ -324,7 +324,7 @@ jobs:
       - test-linux-x64
       - test-linux-x86
       - test-macos-x64
-      - test-windows-x64
+      - test-windows-x64-msys
       - test-windows-x64-cygwin
 
     steps:
