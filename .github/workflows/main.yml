@@ -217,10 +217,10 @@ jobs:
       extra-conf-options: '--openjdk-target=aarch64-apple-darwin'
     if: needs.select.outputs.macos-aarch64 == 'true'
 
-  build-windows-x64:
+  build-windows-x64-msys:
     name: windows-x64
     needs: select
-    uses: ./.github/workflows/build-windows.yml
+    uses: ./.github/workflows/build-windows-msys.yml
     with:
       platform: windows-x64
       msvc-toolset-version: '14.25'
@@ -237,17 +237,17 @@ jobs:
       msvc-toolset-architecture: 'x86.x64'
     if: needs.select.outputs.windows-x64 == 'true'
 
-  build-windows-aarch64:
-    name: windows-aarch64
-    needs: select
-    uses: ./.github/workflows/build-windows.yml
-    with:
-      platform: windows-aarch64
-      msvc-toolset-version: '14.29'
-      msvc-toolset-architecture: 'arm64'
-      make-target: 'hotspot'
-      extra-conf-options: '--openjdk-target=aarch64-unknown-cygwin'
-    if: needs.select.outputs.windows-aarch64 == 'true'
+  # build-windows-aarch64:
+  #   name: windows-aarch64
+  #   needs: select
+  #   uses: ./.github/workflows/build-windows.yml
+  #   with:
+  #     platform: windows-aarch64
+  #     msvc-toolset-version: '14.29'
+  #     msvc-toolset-architecture: 'arm64'
+  #     make-target: 'hotspot'
+  #     extra-conf-options: '--openjdk-target=aarch64-unknown-cygwin'
+  #   if: needs.select.outputs.windows-aarch64 == 'true'
 
   ###
   ### Test jobs
@@ -286,7 +286,7 @@ jobs:
   test-windows-x64:
     name: windows-x64
     needs:
-      - build-windows-x64
+      - build-windows-x64-msys
     uses: ./.github/workflows/test.yml
     with:
       platform: windows-x64
@@ -318,9 +318,9 @@ jobs:
       - build-linux-cross-compile
       - build-macos-x64
       - build-macos-aarch64
-      - build-windows-x64
+      - build-windows-x64-msys
       - build-windows-x64-cygwin
-      - build-windows-aarch64
+      # - build-windows-aarch64
       - test-linux-x64
       - test-linux-x86
       - test-macos-x64
