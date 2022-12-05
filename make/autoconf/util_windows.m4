@@ -398,8 +398,6 @@ AC_DEFUN([UTIL_FIXUP_EXECUTABLE_MSYS],
   # Call helper function which possibly converts this using DOS-style short mode.
   # If so, the updated path is stored in $new_path.
   new_path="$input_to_shortpath"
-  # remove trailing .exe if any
-  new_path="${new_path/%.exe/}"
 
   # Now new_path has a complete unix path to the binary
   if test "x`$ECHO $new_path | $GREP ^/bin/`" != x; then
