@@ -35,7 +35,7 @@ on:
       platforms:
         description: 'Platform(s) to execute on (comma separated, e.g. "linux-x64, macos, aarch64")'
         required: true
-        default: 'linux-x64, linux-x86, linux-x64-variants, linux-cross-compile, macos-x64, macos-aarch64, windows-x64, windows-aarch64'
+        default: 'linux-x64, linux-x86, linux-x64-variants, linux-cross-compile, macos-x64, macos-aarch64, windows-x64, windows-x86'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -58,7 +58,8 @@ jobs:
       macos-x64: ${{ steps.include.outputs.macos-x64 }}
       macos-aarch64: ${{ steps.include.outputs.macos-aarch64 }}
       windows-x64: ${{ steps.include.outputs.windows-x64 }}
-      windows-aarch64: ${{ steps.include.outputs.windows-aarch64 }}
+      windows-x86: ${{ steps.include.outputs.windows-x86 }}
+      # windows-aarch64: ${{ steps.include.outputs.windows-aarch64 }}
 
     steps:
         # This function must be inlined in main.yml, or we'd be forced to checkout the repo
@@ -111,6 +112,7 @@ jobs:
           echo "::set-output name=macos-x64::$(check_platform macos-x64 macos x64)"
           echo "::set-output name=macos-aarch64::$(check_platform macos-aarch64 macos aarch64)"
           echo "::set-output name=windows-x64::$(check_platform windows-x64 windows x64)"
+          echo "::set-output name=windows-x86::$(check_platform windows-x86 windows x86)"
           echo "::set-output name=windows-aarch64::$(check_platform windows-aarch64 windows aarch64)"
 
   ###
@@ -237,6 +239,28 @@ jobs:
       msvc-toolset-architecture: 'x86.x64'
     if: needs.select.outputs.windows-x64 == 'true'
 
+  build-windows-x86-msys:
+    name: windows-x86-msys
+    needs: select
+    uses: ./.github/workflows/build-windows-msys.yml
+    with:
+      platform: windows-x86
+      msvc-toolset-version: '14.25'
+      msvc-toolset-architecture: 'x86.x64'
+      extra-conf-options: '--with-target-bits=32'
+    if: needs.select.outputs.windows-x86 == 'true'
+
+  build-windows-x86-cygwin:
+    name: windows-x86-cygwin
+    needs: select
+    uses: ./.github/workflows/build-windows-cygwin.yml
+    with:
+      platform: windows-x86
+      msvc-toolset-version: '14.25'
+      msvc-toolset-architecture: 'x86.x64'
+      extra-conf-options: '--with-target-bits=32'
+    if: needs.select.outputs.windows-x86 == 'true'
+
   # build-windows-aarch64:
   #   name: windows-aarch64
   #   needs: select
@@ -303,6 +327,26 @@ jobs:
       bootjdk-platform: windows-x64
       runs-on: windows-2019
 
+  test-windows-x86-msys:
+    name: windows-x86-msys
+    needs:
+      - build-windows-x86-msys
+    uses: ./.github/workflows/test.yml
+    with:
+      platform: windows-x86
+      bootjdk-platform: windows-x64
+      runs-on: windows-2019
+
+  test-windows-x86-cygwin:
+    name: windows-x86-cygwin
+    needs:
+      - build-windows-x86-cygwin
+    uses: ./.github/workflows/test.yml
+    with:
+      platform: windows-x86
+      bootjdk-platform: windows-x64
+      runs-on: windows-2019
+
   # Remove bundles so they are not misconstrued as binary distributions from the JDK project
   remove-bundles:
     name: 'Remove bundle artifacts'
@@ -326,6 +370,8 @@ jobs:
       - test-macos-x64
       - test-windows-x64-msys
       - test-windows-x64-cygwin
+      - test-windows-x86-msys
+      - test-windows-x86-cygwin
 
     steps:
         # Hack to get hold of the api environment variables that are only defined for actions
